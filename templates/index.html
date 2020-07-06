@@ -1,0 +1,43 @@
+<!-- There's no place like ~ -->
+
+<html>
+
+<head>
+    <title>Birthday Bingo</title>
+
+    <!-- Front page images -->
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename = 'index.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename = 'bingo.css')}}">
+
+    <!-- Font & Website logo -->
+    <link href='https://fonts.googleapis.com/css?family=Playfair+Display' rel='stylesheet'>
+    <link href='https://fonts.googleapis.com/css?family=DM+Mono' rel='stylesheet'>
+    <link rel="icon" href="https://img.icons8.com/flat_round/64/000000/whale--v1.png">
+</head>
+
+<body>
+    <h1>Birthday Bingo</h1>
+
+    <p>
+        <br> It seems to be your birthday today, and your friends have put together a little game to virtually spend time celebrating you on your <strong>quarantine birthday</strong>
+    </p>
+    <div>
+        <a href="/game">PLAY BINGO!</a>
+    </div>
+
+    <div style="text-align: center;">
+        <div id="collage_grid" style="display: block;">
+            <div class="row">
+                {% for image_list in image_lists %}
+                <div class="column">
+                    {% for image in image_list %}
+                    <img src="{{url_for('static', filename = image_path ~ image)}}" height=""></img>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

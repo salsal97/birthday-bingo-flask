@@ -1,0 +1,4 @@
+export FLASK_APP=hello:myapp (for running hello.py)
+python -m flask run
+pip freeze > requirements.txt (for requirements.txt)
+pip install -r requirements.txt

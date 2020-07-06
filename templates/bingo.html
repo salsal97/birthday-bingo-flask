@@ -1,0 +1,295 @@
+<!--
+    There's no place like ~
+
+    Authors: Saloni Goel & Abhinav Nair, 2020
+    Previous Author: Werner Stoop, 2012
+-->
+<html>
+
+<head>
+    <!-- icons -->
+    <script src="https://kit.fontawesome.com/39896120a5.js" crossorigin="anonymous"></script>
+
+    <!-- Font & Website logo -->
+    <link href='https://fonts.googleapis.com/css?family=Playfair+Display' rel='stylesheet'>
+    <link href='https://fonts.googleapis.com/css?family=DM+Mono' rel='stylesheet'>
+    <link rel="icon" href="https://img.icons8.com/flat_round/64/000000/whale--v1.png">
+
+    <!-- css -->
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename = 'bingo.css')}}">
+
+    <!-- Disable right click http://www.spacegun.co.uk -->
+    <script language=JavaScript>
+        var message = "Haha, really?";
+
+        function rtclickcheck(keyp) {
+            if (navigator.appName == "Netscape" && keyp.which == 3) {
+                alert(message);
+                return false;
+            }
+            if (navigator.appVersion.indexOf("MSIE") != -1 && event.button == 2) {
+                alert(message);
+                return false;
+            }
+        }
+        document.onmousedown = rtclickcheck;
+    </script>
+
+    <title>Birthday Bingo</title>
+
+    <script type="text/javascript">
+        var N = "{{ data.columns }}";
+        var M = "{{ data.rows }}";
+        var wrong_guess_max = "{{ data.wrong_guess_max }}";
+        var wrong_guess_color = "{{ data.wrong_guess_color }}";
+        var correct_guess_color = "{{ data.correct_guess_color }}";
+        var prize_link = "{{ data.prize_link }}";
+        var data = '{{ data.bingo_cards|tojson }}';
+        data = JSON.parse(data);
+        var wrong_guesses = new Array(N * M).fill(0);
+        var correct_guesses = 0;
+
+        function start() {
+            document.getElementById("heading").innerHTML = "{{ data.bingo_heading }}";
+            document.getElementById("specificInstructions").innerHTML = "{{ data.specific_instructions }}";
+        }
+
+        // generate/restart game
+        function generate() {
+            document.getElementById("player").innerHTML = "";
+            var grid = document.getElementById("grid");
+            wrong_guesses = new Array(N * M).fill(0);
+            correct_guesses = 0;
+            var used_id = [];
+            var table_obj = "";
+
+            // TEST: Check if num(data) = N*M
+            if (data.length != N * M) {
+                var error = "<h3>JSON ARRAY LENGTH = " + data.length + " DOES NOT MATCH N*M = " + (N * M) + "</h3>";
+                grid.innerHTML = error;
+                console.log(error)
+                return;
+            }
+
+            if (grid.innerHTML && !confirm("Are you sure you want to regenerate?"))
+                return;
+
+            console.log("grid start");
+            var html = '<table border="0">';
+            for (var y = 0; y < M; y++) {
+                html += "<tr>"
+                for (var x = 0; x < N; x++) {
+                    var obj = data[x + y * N];
+
+                    var i;
+                    do {
+                        i = Math.round(Math.random() * (N * M - 1));
+                    } while (used_id.indexOf(i) >= 0);
+                    used_id.push(i);
+                    document.getElementById("player").innerHTML += '<li id="player_' + i + '">' + data[i].friend + '</li>';
+
+                    // index table obj start 
+                    table_obj = '<td id="cell_' + x + '_' + y + '" >';
+
+                    // adding guess function
+                    table_obj += '<span id="chk-cell_' + x + '_' + y + '" onclick="cellClicked(\'cell_' + x + '_' + y + '\')">';
+
+                    // adding clickable dice icon
+                    if (obj.type == "quote" || obj.type == "song")
+                        table_obj += '<i class=\"fas fa-dice\"></i>';
+
+                    // adding clickable image
+                    if (obj.type == "photo")
+                        table_obj += '<img src ="' + obj.photo_cropped + '" alt="cropped photo here" />';
+
+                    // close guess function
+                    table_obj += '</span>';
+
+                    // add song name and artist
+                    if (obj.type == "song") {
+                        table_obj += "\t" + obj.song + " - " + obj.artist;
+                        table_obj += "<br>" + '<span onClick="openPlayer(\'cell_' + x + '_' + y + "')\"><i class=\"fab fa-youtube\"></i></span>";
+                    }
+
+                    // quote
+                    if (obj.type == "quote" || obj.type == "song")
+                        table_obj += "\t" + obj.quote;
+
+                    // end table object
+                    table_obj += "</td>";
+
+                    html += table_obj;
+                }
+                html += "</tr>"
+            }
+            html += "</table>";
+            grid.innerHTML = html;
+        }
+
+        function cellClicked(id) {
+            var temp = id.split("_");
+            var i = Number(temp[1]) + Number(temp[2]) * N;
+
+            var person = prompt("Enter the name of the friend").trim();
+            if (person != null) {
+                if (person.toLowerCase() == data[i].friend.toLowerCase().trim()) {
+                    correctGuess(id, i);
+                } else {
+                    wrongGuess(id, i, person);
+                }
+            }
+        }
+
+        function correctGuess(id, i) {
+            correct_guesses++;
+            var d = document.getElementById(id);
+
+            // Change content in box 
+            if (data[i].type == "photo") {
+                var popupModal = document.getElementById("popupModal");
+                var modalImage = document.getElementById("modalImage");
+                popupModal.style.display = "block";
+                modalImage.src = data[i].photo_full;
+            }
+            d.innerHTML = data[i].friend.toUpperCase();
+            d.style.backgroundColor = correct_guess_color;
+
+            // Strike out player
+            var player = document.getElementById("player_" + i);
+            player.innerHTML = "<s>" + player.innerHTML + "</s>";
+
+            // Check for BINGO
+            if (correct_guesses == N * M) {
+                onBingo();
+            }
+        }
+
+        function wrongGuess(id, i, person) {
+            wrong_guesses[i]++;
+
+            // Add name of wrong guess to tile 
+            var d = document.getElementById(id);
+            d.style.backgroundColor = wrong_guess_color;
+            if (!d.innerHTML.endsWith(", ")) {
+                d.innerHTML += "<br> Wrong guess: ";
+            }
+            d.innerHTML += person + ", ";
+
+            // Offer an escape 
+            if (wrong_guesses[i] >= wrong_guess_max) {
+                if (confirm("Cheat code activated. Would you like to know the answer?")) {
+                    alert("The correct answer is " + data[i].friend);
+                    correctGuess(id, i);
+                }
+            }
+        }
+
+        function onBingo() {
+
+            // Clear page & start loading taskbar
+            document.getElementById("playerList").innerHTML = "";
+            document.getElementById("grid").innerHTML = '<h1 style="background:#0A7328"> Congratulations! Your prize is loading ...</h1>';
+            var elem = document.getElementById("progressBar");
+            elem.innerHTML = '<h1 style="background:white"> </h1>';
+
+            var width = 1;
+            var id = setInterval(frame, 100);
+
+            function frame() {
+                if (width >= 100) {
+
+                    // On loaded, move to prize page
+                    clearInterval(id);
+                    window.location.replace(prize_link);
+                } else {
+                    width++;
+                    elem.style.width = width + '%';
+                }
+            }
+        }
+
+        // open YouTube embedded
+        function openPlayer(id) {
+            console.log("ID in openPlayer -> " + id);
+            var temp = id.split("_");
+            var i = Number(temp[1]) + Number(temp[2]) * N;
+            var youTubeCode = data[i].link;
+            console.log(youTubeCode);
+            var elem = document.getElementById("embeddedPlayer");
+            document.getElementById("youtubePlayer").src = "https://www.youtube.com/embed/" + youTubeCode;
+            if (elem.style.display == "block")
+                elem.style.display = "none";
+            else
+                elem.style.display = "block";
+        }
+
+        function toggle(id) {
+            var elem = document.getElementById(id);
+            if (elem.style.display == "block")
+                elem.style.display = "none";
+            else
+                elem.style.display = "block";
+        }
+
+        function closeModal() {
+            var modal = document.getElementById("popupModal");
+            modal.style.display = "none";
+        }
+    </script>
+</head>
+
+<body onLoad="start()">
+
+    <body>
+        <h1 id="heading"></h1>
+
+        <p>An exciting game for your quarantine birthday!<a href="javascript:toggle('instructions');"> Instructions...</a>
+        </p>
+
+        <noscript>
+        <div class="error">
+            <strong>Problem:</strong>
+            <p><em>
+                    You do not have JavaScript enabled. JavaScript must be enabled for this application to work.
+                </em></p>
+        </div>
+    </noscript>
+
+        <div id="instructions">
+            <h2>Instructions</h2>
+            <ol>
+                <noscript>
+                <li>Enable JavaScript</li>
+            </noscript>
+                <li>Click <strong>Refresh</strong> to create your Bingo board.</li>
+                <li id="specificInstructions"></li>
+                <li>If your guess is right, the box will change color and display the name of the person (: </li>
+                <li>If your guess is wrong, the box will show you your incorrect guess to help you narrow your search </li>
+                <li>HINT: The roster on the left of the grid has names of the people who participated! Hit refresh if it hasn't been populated yet </li>
+                <li>Good luck, maybe time yourself? May the force be with you</li>
+            </ol>
+        </div>
+
+        <div id="embeddedPlayer">
+            <iframe id="youtubePlayer" width="560" height="315" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>;
+        </div>
+
+        <div style="float:left" id="playerList">
+            <h2 style="margin-bottom:0">Roster</h2>
+            <ul id="player"></ul>
+        </div>
+
+        <form>
+            <input type="button" value="Refresh" onClick="generate();" />
+        </form>
+
+        <div id="popupModal" class="modal" style="display: none;">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <img class="modal-content" id="modalImage">
+        </div>
+
+        <div id="grid"></div>
+        <div id="progressBar"></div>
+    </body>
+
+</html>
