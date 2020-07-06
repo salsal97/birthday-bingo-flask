@@ -9,9 +9,6 @@ from flask import Flask, render_template
 app = Flask(__name__)
 
 # using Flask's app.route decorator to map the URL route / to that function:
-# @app.route("/")
-# def home():
-#     return render_template("layout.html")
 @app.route("/")
 def home():
     no_of_columns=4
@@ -57,16 +54,3 @@ def prize():
         data = json.load(f)
     return render_template("prize.html",
     data=data)
-
-@app.route("/hello/")
-@app.route("/hello/<name>")
-def hello_there(name = None):
-    return render_template(
-        "hello_there.html",
-        name=name,
-        date=datetime.now()
-    )
-
-@app.route("/api/data")
-def get_data():
-    return app.send_static_file("data.json")
